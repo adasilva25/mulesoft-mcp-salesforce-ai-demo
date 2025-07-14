@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<sub-flow name="gemini-client" doc:id="2513b69b-81d2-4f81-8518-10953deaca79" >
+		<http:request method="#[payload.request.method]" doc:name="HTTP Request" doc:id="0c448067-d51f-4377-afd7-3025d4d2d3cd" url="#[Mule::p('gemini-api.host') ++ payload.request.path]">
+				<reconnect />
+			<http:body ><![CDATA[#[payload.content]]]></http:body>
+			<http:headers><![CDATA[#[payload.request.headers]]]></http:headers>
+		</http:request>
+	</sub-flow>
+</mule>

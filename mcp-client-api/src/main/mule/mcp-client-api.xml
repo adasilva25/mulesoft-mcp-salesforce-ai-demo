@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:mcp="http://www.mulesoft.org/schema/mule/mcp" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/mcp http://www.mulesoft.org/schema/mule/mcp/current/mule-mcp.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<flow name="mcp-client-analyze-sentiment" doc:id="0e88c38d-9ba4-438e-8cd7-c55904e6488d" >
+		<http:listener doc:name="POST /analyze-sentiment" doc:id="e474bff8-fb0a-46a6-bf15-e4d09da7054d" config-ref="HTTP_Listener_config" path="/analyze-sentiment" allowedMethods="POST" />
+		<logger level="INFO" doc:name="Start Logger" doc:id="3d0ec9f1-86ca-43b6-bf86-bf6f250bca0b" message='#["Analyze sentiment process started with input data: " ++ write(payload, "application/java")]'/>
+		<mcp:call-tool toolName="analyze-sentiment" doc:name="analyze-sentiment" doc:id="0dde817f-9606-4ef7-9e2e-9a5bb124da56" config-ref="MCP_Client"/>
+		<ee:transform doc:name="Transform Response" doc:id="5a8b19d6-455e-46e9-8ed2-868224f62357" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var response = read(payload.contents[0].text default "", "application/json")
+---
+if (not payload.error)
+	response
+else
+	{'status': 'Failed'}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="End Logger" doc:id="c11b0899-6b82-42b7-8c93-72e755a5a95a" message="Analyze sentiment process ended."/>
+	</flow>
+</mule>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:mcp="http://www.mulesoft.org/schema/mule/mcp"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/mcp http://www.mulesoft.org/schema/mule/mcp/current/mule-mcp.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<mcp:client-config name="MCP_Client" doc:name="MCP Client" doc:id="3708c24d-92cd-4e9e-a354-224af3ea7966" clientName="Mule MCP Connector" clientVersion="1.0.0" >
+		<mcp:sse-client-connection serverUrl="http://localhost:8082" requestTimeout="60">
+			<reconnection >
+				<reconnect />
+			</reconnection>
+		</mcp:sse-client-connection>
+	</mcp:client-config>
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="5c391833-da6f-40aa-b02d-fbd5fe241c9a" >
+		<http:listener-connection host="0.0.0.0" port="8081" >
+			<reconnection >
+				<reconnect />
+			</reconnection>
+		</http:listener-connection>
+	</http:listener-config>
+</mule>

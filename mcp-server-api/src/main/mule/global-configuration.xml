@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:mcp="http://www.mulesoft.org/schema/mule/mcp" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/mcp http://www.mulesoft.org/schema/mule/mcp/current/mule-mcp.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	<mcp:server-config name="MCP_Server" doc:name="MCP Server" doc:id="8454f360-ddf7-4711-b414-8fab3a8bf286" serverName="mule-mcp-server" serverVersion="1.0.0" >
+		<mcp:sse-server-connection listenerConfig="HTTP_Listener_config">
+			<reconnection >
+				<reconnect />
+			</reconnection>
+		</mcp:sse-server-connection>
+	</mcp:server-config>
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="7e372160-069f-490c-9b48-68f1da20fcf6" >
+		<http:listener-connection host="0.0.0.0" port="8082" >
+			<reconnection >
+				<reconnect />
+			</reconnection>
+		</http:listener-connection>
+	</http:listener-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="83ebacfc-e4b0-4bf1-bf2f-5c6f031bfc43" file="properties/${mule.env}.yaml" />
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="985084c2-016c-4a7f-8c25-7bdbcaffaae4" key="${mule.key}" file="properties/${mule.env}-secure.yaml"/>
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="953cd09d-59da-4bfc-a9fa-d3cfb0e0ce79" >
+		<salesforce:basic-connection username="${secure::salesforce.user}" password="${secure::salesforce.password}" securityToken="${secure::salesforce.token}"/>
+	</salesforce:sfdc-config>
+</mule>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	<sub-flow name="query-client" doc:id="944eb6c4-0fd7-4b3c-a69e-16d4302b74ef" >
+		<salesforce:query doc:name="Query" doc:id="c9b20cd6-dc56-448f-a0fb-fbc5c2ed9e40" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query ><![CDATA[#[payload.query]]]></salesforce:salesforce-query>
+			<salesforce:parameters ><![CDATA[#[payload.parameters]]]></salesforce:parameters>
+		</salesforce:query>
+	</sub-flow>
+	<sub-flow name="update-client" doc:id="3e35aecd-a25e-4847-8a55-5d81b4bad85f" >
+		<salesforce:update doc:name="Update" doc:id="98842696-02e4-4a98-8833-288752ce778b" config-ref="Salesforce_Config" type="#[payload.object]">
+			<salesforce:records ><![CDATA[#[payload.records]]]></salesforce:records>
+		</salesforce:update>
+	</sub-flow>
+</mule>

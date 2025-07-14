@@ -1,0 +1,13 @@
+salesforce:
+  object: "Case"
+  query:
+    get-case-id: "SELECT Id FROM Case WHERE CaseNumber = ':caseNumber'"
+
+gemini-api:
+  host: "https://generativelanguage.googleapis.com/v1beta"
+  path: "/models/gemini-1.5-flash:generateContent"
+  temperature: "0"
+  top-k: "1"
+  top-p: "1.0"
+  max-output-tokens: "50"
+  prompt: "You are a customer support analyst. Analyze the comment and reply in JSON with two fields: sentiment (positive, neutral, or negative) and score (confidence level from 0 to 1). Comment: "

@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:mcp="http://www.mulesoft.org/schema/mule/mcp" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/mcp http://www.mulesoft.org/schema/mule/mcp/current/mule-mcp.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<flow name="mcp-server-new-session" doc:id="6ff3ad6b-2a24-4a2f-8844-0eea42a73ce5">
+		<mcp:on-new-session-listener doc:name="MCP Server - On New Session Listener" doc:id="5680010d-6d42-4557-8f21-bc7f3056241f" config-ref="MCP_Server">
+		</mcp:on-new-session-listener>
+		<logger level="INFO" doc:name="New Session Logger" doc:id="6cd82094-8cb5-4fb2-8d25-6a66414f68a6" message='#["New session created: " ++ write(message, "application/java")]' />
+	</flow>
+	<flow name="mcp-server-tool-analyze-sentiment" doc:id="f70fb40c-1c60-46c4-a659-07c1f8053d0f" >
+		<mcp:tool-listener doc:name="MCP Server - Tool Listener" doc:id="c8ae2862-c82f-4d95-b7b1-c2380c19f130" config-ref="MCP_Server" name="analyze-sentiment">
+			<mcp:description ><![CDATA[Tool used for customer sentiment analysis using Gemini]]></mcp:description>
+			<mcp:parameters-schema ><![CDATA[{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "case": { 
+        	"type": "string",
+        	"description": "Case number"
+        },
+        "comment": { 
+        	"type": "string",
+        	"description": "Comment to analyze"
+        }
+    },
+    "required": ["comment", "case"]
+}]]></mcp:parameters-schema>
+			<mcp:responses >
+				<mcp:text-tool-response-content text="#[write(payload, 'application/json')]" />
+			</mcp:responses>
+		</mcp:tool-listener>
+		<logger level="INFO" doc:name="Start Logger" doc:id="efbb9077-9259-4a10-8898-48f5d60409a7" message="Analyze sentiment process started."/>
+		<set-variable value="#[payload]" doc:name="inputData" doc:id="b0656f9d-5571-420d-b8f8-e77ac4a4185f" variableName="inputData"/>
+		<flow-ref doc:name="query-case-id" doc:id="7da31a9f-c599-4147-90df-9a7ee2d8556e" name="query-case-id"/>
+		<flow-ref doc:name="invoke-llm" doc:id="2fabd841-9300-4863-93e3-c40336f36f18" name="invoke-llm"/>
+		<flow-ref doc:name="update-data-in-salesforce" doc:id="0e0250f4-cac0-4f80-a9ca-742c6994b670" name="update-data-in-salesforce"/>
+		<ee:transform doc:name="Prepare response" doc:id="b6e2f41b-7379-4553-93f2-2ac2a1c9ab01" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+vars.llmResponse]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="End Logger" doc:id="1e37fc2a-2f03-4104-9456-8bfd1b3aa656" message="Analyze sentiment process ended."/>
+	</flow>
+	<sub-flow name="query-case-id" doc:id="add384dc-622a-41dd-9e6b-758da6a4e54e">
+		<ee:transform doc:name="Prepare query" doc:id="3fe4d195-739a-4e6f-b478-1e43dbabe7ae">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+	query: Mule::p('salesforce.query.get-case-id'),
+	parameters: {
+		caseNumber: payload.caseNumber
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="query-client" doc:id="c0da1801-c21f-4f0d-91ff-91be6f9acdba" name="query-client" />
+		<validation:is-not-null doc:name="Is not null" doc:id="0a330b95-f0e6-4344-8fca-cdb26d5df4b0" value="#[payload[0].Id]"/>
+		<set-variable value="#[payload[0].Id]" doc:name="caseId" doc:id="5bb3059e-c103-4844-b080-bce105b48ddd" variableName="caseId"/>
+	</sub-flow>
+	<sub-flow name="invoke-llm" doc:id="96e8e784-6368-400d-8307-7e725e4e517c" >
+		<ee:transform doc:name="Prepare LLM Payload" doc:id="d015a5ab-40b3-4740-98b9-2d9ba57730b4" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var comment = vars.inputData.comment default ""
+var prompt = Mule::p('gemini-api.prompt')
+var temperature = Mule::p('gemini-api.temperature')
+var topK = Mule::p('gemini-api.top-k')
+var topP = Mule::p('gemini-api.top-p')
+var maxOutputTokens = Mule::p('gemini-api.max-output-tokens')
+---
+{
+    "contents": [
+        {
+            "parts": [
+                {
+                    "text": "$(prompt) '$(comment)'"
+                }
+            ]
+        }
+    ],
+    "generationConfig": {
+        "responseMimeType": "application/json",
+        "temperature": temperature,
+        "topK": topK,
+        "topP": topP,
+        "maxOutputTokens": maxOutputTokens
+    }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Prepare LLM Request" doc:id="9caeb254-335f-4d04-ae39-a4502a30aecc" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var path = Mule::p('gemini-api.path')
+var apiKey = Mule::p('secure::gemini-api.key')
+---
+{
+	request: {
+		method: "POST",
+		path: path,
+		headers: {
+			"X-goog-api-key": apiKey,
+			"Content-Type": "application/json"
+		}
+	},
+	content: payload
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="gemini-client" doc:id="06058256-2269-4f1f-8318-01728b01b5ec" name="gemini-client" />
+		<logger level="INFO" doc:name="Response Logger" doc:id="5e8bbc19-39d3-4109-9ad7-88e260ac1ea4" message='#[write(payload, "application/java")]' />
+		<ee:transform doc:name="Parse Response" doc:id="d7c71f67-95da-41ce-84e3-250feb558243" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var cleaned = payload.candidates[0].content.parts[0].text
+    replace "```json" with ""
+    replace "```" with ""
+    replace "\n" with ""
+---
+read(cleaned, "application/json")]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#[payload]" doc:name="llmResponse" doc:id="d48620fd-a3c4-41e4-8b63-39a8bab3cfec" variableName="llmResponse" />
+	</sub-flow>
+	<sub-flow name="update-data-in-salesforce" doc:id="6191cbeb-ce0f-4508-b3b6-9b01d9635d01" >
+		<ee:transform doc:name="Prepare Update Request" doc:id="75691b4f-6cb7-4340-b71a-0b3ece7255d9" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	object: Mule::p('salesforce.object'),
+	records: [{
+		Id: vars.caseId,
+		Sentiment__c: payload.sentiment,
+		Score__c: payload.score,
+	}]
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="update-client" doc:id="d47fbe54-36c6-4a66-b631-d03a3f6dadec" name="update-client"/>
+	</sub-flow>
+</mule>
